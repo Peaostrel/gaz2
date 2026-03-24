@@ -5,8 +5,8 @@
 #include <chrono> // Время
 #include <ctime> // Системное время
 #include <regex> // Регулярки
-#include <iomanip> // НОВОЕ: Манипуляторы ввода/вывода для парсинга дат
-#include <sstream> // НОВОЕ: Потоки строк для дат
+#include <iomanip> // Манипуляторы ввода/вывода для парсинга дат
+#include <sstream> // Потоки строк для дат
 
 struct SortByName { // Функтор
     bool operator()(const std::unique_ptr<Resource>& a, const std::unique_ptr<Resource>& b) const { return a->getName() < b->getName(); } // Сравнение
@@ -71,7 +71,7 @@ void ArchiveManager::printTree() const { // Дерево
     std::cout << "-----------------\n"; // Подвал
 } // Конец метода
 
-void ArchiveManager::globalAudit() const { // ОБНОВЛЕНО: Глобальный аудит по ТЗ
+void ArchiveManager::globalAudit() const { // Глобальный аудит
     std::vector<const Resource*> allRes; // Вектор
     root->collectAll(allRes); // Сбор всех узлов
     
@@ -88,7 +88,7 @@ void ArchiveManager::globalAudit() const { // ОБНОВЛЕНО: Глобаль
         } // Конец if
     } // Конец цикла
     
-    size_t avgSize = (fileCount > 0) ? (totalFileSize / fileCount) : 0; // Расчет среднего размера (защита от деления на 0)
+    size_t avgSize = (fileCount > 0) ? (totalFileSize / fileCount) : 0; // Расчет среднего размера
     
     std::cout << "\n=== Глобальный аудит ===\n"; // Шапка
     std::cout << "Общее количество папок: " << dirCount << "\n"; // Вывод папок
@@ -254,7 +254,7 @@ void ArchiveManager::moveResource(const std::string& resName, const std::string&
     std::cout << "[+] Перемещено.\n"; // Успех
 } // Конец метода
 
-void ArchiveManager::copyResource(const std::string& resName, const std::string& destDirName) { // НОВОЕ: Глубокое копирование
+void ArchiveManager::copyResource(const std::string& resName, const std::string& destDirName) { // Глубокое копирование
     if (resName == root->getName()) throw FileSystemException("Нельзя скопировать системный корень."); // Защита
     Directory* destDir = (destDirName == root->getName()) ? root.get() : root->findDirectory(destDirName); // Цель
     if (!destDir) throw FileSystemException("Папка назначения не найдена."); // Ошибка
@@ -271,7 +271,13 @@ void ArchiveManager::copyResource(const std::string& resName, const std::string&
     std::cout << "[+] Ветка архива успешно скопирована физически.\n"; // Вывод
 } // Конец метода
 
-void ArchiveManager::filterByDate(const std::string& startDateStr, const std::string& endDateStr) const { // НОВОЕ: Фильтрация по дате
+void ArchiveManager::filterByDate(const std::string& startDateStr, const std::string& endDateStr) const { // Фильтрация по дате
+    // ЖЕЛЕЗОБЕТОННАЯ ЗАЩИТА: Строгий Regex (4 цифры - 2 цифры - 2 цифры)
+    std::regex datePattern("^\\d{4}-\\d{2}-\\d{2}$"); 
+    if (!std::regex_match(startDateStr, datePattern) || !std::regex_match(endDateStr, datePattern)) {
+        throw FileSystemException("Некорректный формат! Введите строго YYYY-MM-DD (например, 2026-03-24).");
+    }
+
     std::tm startTm = {}; // Структура времени начала
     std::tm endTm = {}; // Структура времени конца
     std::istringstream ssStart(startDateStr); // Поток для парсинга
@@ -280,7 +286,8 @@ void ArchiveManager::filterByDate(const std::string& startDateStr, const std::st
     ssStart >> std::get_time(&startTm, "%Y-%m-%d"); // Читаем формат
     ssEnd >> std::get_time(&endTm, "%Y-%m-%d"); // Читаем формат
     
-    if (ssStart.fail() || ssEnd.fail()) throw FileSystemException("Некорректный формат даты (используйте YYYY-MM-DD)."); // Ошибка парсинга
+    // Проверка логических ошибок (например, 2026-13-45)
+    if (ssStart.fail() || ssEnd.fail()) throw FileSystemException("Логическая ошибка в дате."); 
     
     endTm.tm_hour = 23; endTm.tm_min = 59; endTm.tm_sec = 59; // Конец дня включительно
     
