@@ -38,6 +38,7 @@ public:
 
     void searchByMask(const std::string& maskStr) const;
     void sortResources(int criteria);
+    void exportToCSV(const std::string& filename) const;
 };
 
 #endif // ARCHIVEMANAGER_H

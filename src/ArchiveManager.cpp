@@ -5,7 +5,6 @@
 #include <ctime>
 #include <regex>
 
-// Функторы для сортировки
 struct SortByName {
     bool operator()(const std::unique_ptr<Resource>& a, const std::unique_ptr<Resource>& b) const {
         return a->getName() < b->getName();
@@ -123,6 +122,28 @@ void ArchiveManager::sortResources(int criteria) {
         throw FileSystemException("Неизвестный критерий сортировки.");
     }
     logOperation("SORT", true, "Изменен режим сортировки: " + std::to_string(criteria));
+}
+
+void ArchiveManager::exportToCSV(const std::string& filename) const {
+    std::ofstream out(filename);
+    if (!out) throw FileSystemException("Не удалось открыть файл для CSV экспорта.");
+    
+    out << "Name,Type,Size,CreationDate\n";
+    std::vector<const Resource*> allRes;
+    root->collectAll(allRes);
+    
+    for (const auto& res : allRes) {
+        std::time_t cDate = res->getCreationDate();
+        char timeBuf[80];
+        std::strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", std::localtime(&cDate));
+        
+        out << res->getName() << ","
+            << (res->isDirectory() ? "Directory" : "File") << ","
+            << res->calculateSize() << ","
+            << timeBuf << "\n";
+    }
+    std::cout << "[+] Структура успешно выгружена в " << filename << "\n";
+    logOperation("EXPORT", true, "Экспорт в CSV: " + filename);
 }
 
 void ArchiveManager::writeString(std::ofstream& out, const std::string& str) const {

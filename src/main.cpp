@@ -17,8 +17,9 @@ void printMenu() {
     std::cout << "4. Глобальный аудит\n";
     std::cout << "5. Поиск по маске (Regex)\n";
     std::cout << "6. Сортировка (1-Имя, 2-Размер, 3-Дата)\n";
-    std::cout << "7. Сохранить архив (archive.dat)\n";
-    std::cout << "8. Загрузить архив (archive.dat)\n";
+    std::cout << "7. Выгрузить в CSV\n";
+    std::cout << "8. Сохранить архив (archive.dat)\n";
+    std::cout << "9. Загрузить архив (archive.dat)\n";
     std::cout << "0. Выход\n";
     std::cout << "Выбор: ";
 }
@@ -105,10 +106,13 @@ int main() {
                     break;
                 }
                 case 7:
+                    archive.exportToCSV("export.csv");
+                    break;
+                case 8:
                     archive.saveToFile("archive.dat");
                     std::cout << "[OK] Данные сериализованы в archive.dat\n";
                     break;
-                case 8:
+                case 9:
                     archive.loadFromFile("archive.dat");
                     std::cout << "[OK] Данные успешно загружены из archive.dat\n";
                     break;
