@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS // Отключаем предупреждения безопасности MSVC для функций времени
 #include "ArchiveManager.h" // Заголовок менеджера
 #include "FileSystemException.h" // Ошибки
 #include <iostream> // Вывод
