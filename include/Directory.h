@@ -5,6 +5,7 @@
 #include "AccessLevel.h"
 #include <vector>
 #include <memory>
+#include <functional>
 
 class Directory : public Resource {
 private:
@@ -21,6 +22,7 @@ public:
     const std::vector<std::unique_ptr<Resource>>& getChildren() const;
 
     void collectAll(std::vector<const Resource*>& list) const;
+    void sortChildren(const std::function<bool(const std::unique_ptr<Resource>&, const std::unique_ptr<Resource>&)>& comp);
 
     size_t calculateSize() const override;
     void print(int depth = 0) const override;

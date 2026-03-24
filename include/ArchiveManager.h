@@ -37,6 +37,7 @@ public:
     void loadFromFile(const std::string& filename);
 
     void searchByMask(const std::string& maskStr) const;
+    void sortResources(int criteria);
 };
 
 #endif // ARCHIVEMANAGER_H

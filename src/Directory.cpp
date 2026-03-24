@@ -1,5 +1,6 @@
 #include "Directory.h"
 #include <iostream>
+#include <algorithm>
 
 Directory::Directory(const std::string& name, AccessLevel accLevel)
     : Resource(name), level(accLevel) {}
@@ -29,6 +30,15 @@ void Directory::collectAll(std::vector<const Resource*>& list) const {
             dynamic_cast<const Directory*>(child.get())->collectAll(list);
         } else {
             list.push_back(child.get());
+        }
+    }
+}
+
+void Directory::sortChildren(const std::function<bool(const std::unique_ptr<Resource>&, const std::unique_ptr<Resource>&)>& comp) {
+    std::sort(children.begin(), children.end(), comp);
+    for (auto& child : children) {
+        if (child->isDirectory()) {
+            dynamic_cast<Directory*>(child.get())->sortChildren(comp);
         }
     }
 }

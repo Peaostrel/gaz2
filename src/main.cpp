@@ -16,8 +16,9 @@ void printMenu() {
     std::cout << "3. Вывести дерево архива\n";
     std::cout << "4. Глобальный аудит\n";
     std::cout << "5. Поиск по маске (Regex)\n";
-    std::cout << "6. Сохранить архив (archive.dat)\n";
-    std::cout << "7. Загрузить архив (archive.dat)\n";
+    std::cout << "6. Сортировка (1-Имя, 2-Размер, 3-Дата)\n";
+    std::cout << "7. Сохранить архив (archive.dat)\n";
+    std::cout << "8. Загрузить архив (archive.dat)\n";
     std::cout << "0. Выход\n";
     std::cout << "Выбор: ";
 }
@@ -88,16 +89,26 @@ int main() {
                     break;
                 case 5: {
                     std::string mask;
-                    std::cout << "Введите маску Regex (например, ^test для начала имени с 'test'): ";
+                    std::cout << "Введите маску Regex: ";
                     std::cin >> mask;
                     archive.searchByMask(mask);
                     break;
                 }
-                case 6:
+                case 6: {
+                    int criteria;
+                    std::cout << "Критерий (1-Имя, 2-Размер, 3-Дата): ";
+                    if (!(std::cin >> criteria) || criteria < 1 || criteria > 3) {
+                        clearInput();
+                        throw FileSystemException("Некорректный критерий сортировки.");
+                    }
+                    archive.sortResources(criteria);
+                    break;
+                }
+                case 7:
                     archive.saveToFile("archive.dat");
                     std::cout << "[OK] Данные сериализованы в archive.dat\n";
                     break;
-                case 7:
+                case 8:
                     archive.loadFromFile("archive.dat");
                     std::cout << "[OK] Данные успешно загружены из archive.dat\n";
                     break;

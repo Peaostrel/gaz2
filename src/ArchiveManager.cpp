@@ -5,6 +5,25 @@
 #include <ctime>
 #include <regex>
 
+// Функторы для сортировки
+struct SortByName {
+    bool operator()(const std::unique_ptr<Resource>& a, const std::unique_ptr<Resource>& b) const {
+        return a->getName() < b->getName();
+    }
+};
+
+struct SortBySize {
+    bool operator()(const std::unique_ptr<Resource>& a, const std::unique_ptr<Resource>& b) const {
+        return a->calculateSize() < b->calculateSize();
+    }
+};
+
+struct SortByDate {
+    bool operator()(const std::unique_ptr<Resource>& a, const std::unique_ptr<Resource>& b) const {
+        return a->getCreationDate() < b->getCreationDate();
+    }
+};
+
 ArchiveManager::ArchiveManager() : currentUserLevel(AccessLevel::ADMIN) {
     root = std::make_unique<Directory>("root", AccessLevel::GUEST);
     logOperation("INIT", true, "Инициализация корневого каталога");
@@ -88,6 +107,22 @@ void ArchiveManager::searchByMask(const std::string& maskStr) const {
     } catch (const std::regex_error&) {
         throw FileSystemException("Некорректное регулярное выражение для поиска.");
     }
+}
+
+void ArchiveManager::sortResources(int criteria) {
+    if (criteria == 1) {
+        root->sortChildren(SortByName());
+        std::cout << "[+] Сортировка по имени применена.\n";
+    } else if (criteria == 2) {
+        root->sortChildren(SortBySize());
+        std::cout << "[+] Сортировка по размеру применена.\n";
+    } else if (criteria == 3) {
+        root->sortChildren(SortByDate());
+        std::cout << "[+] Сортировка по дате применена.\n";
+    } else {
+        throw FileSystemException("Неизвестный критерий сортировки.");
+    }
+    logOperation("SORT", true, "Изменен режим сортировки: " + std::to_string(criteria));
 }
 
 void ArchiveManager::writeString(std::ofstream& out, const std::string& str) const {
