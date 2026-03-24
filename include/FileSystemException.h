@@ -1,19 +1,19 @@
-#ifndef FILESYSTEMEXCEPTION_H // Защита от множетельного включения заголовка
-#define FILESYSTEMEXCEPTION_H // Объявление макроса защиты
+#ifndef FILESYSTEMEXCEPTION_H // Защита от двойного включения
+#define FILESYSTEMEXCEPTION_H // Установка макроса
 
-#include <exception> // Подключаем библиотеку стандартных исключений C++
-#include <string> // Подключаем библиотеку для работы со строками std::string
+#include <exception> // Подключение стандартных исключений
+#include <string> // Подключение библиотеки строк
 
-class FileSystemException : public std::exception { // Создаем кастомный класс ошибки, наследуя от std::exception
-private: // Скрытая секция класса
-    std::string message; // Поле для хранения текста конкретной ошибки
+class FileSystemException : public std::exception { // Класс кастомных ошибок ФС
+private: // Скрытая секция
+    std::string message; // Сообщение об ошибке
 
-public: // Публичная секция класса
-    explicit FileSystemException(const std::string& msg) : message(msg) {} // Конструктор, принимающий текст ошибки и сохраняющий его в message
+public: // Публичный интерфейс
+    explicit FileSystemException(const std::string& msg) : message(msg) {} // Конструктор с текстом ошибки
     
-    const char* what() const noexcept override { // Переопределяем стандартный метод возврата текста ошибки (не бросает исключений)
-        return message.c_str(); // Возвращаем строку в формате C-string (const char*)
-    } // Конец метода what
-}; // Конец объявления класса
+    const char* what() const noexcept override { // Переопределение стандартного метода
+        return message.c_str(); // Возврат C-строки
+    } // Конец метода
+}; // Конец класса
 
-#endif // FILESYSTEMEXCEPTION_H (Конец защиты)
+#endif // FILESYSTEMEXCEPTION_H // Конец защиты

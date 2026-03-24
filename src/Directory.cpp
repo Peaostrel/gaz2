@@ -1,125 +1,130 @@
-#include "Directory.h" // Заголовок директории
-#include "FileSystemException.h" // Исключения системы
-#include <iostream> // Поток вывода
-#include <algorithm> // Алгоритмы (find_if, sort)
+#include "Directory.h" // Заголовок
+#include "FileSystemException.h" // Ошибки
+#include <iostream> // Вывод
+#include <algorithm> // Алгоритмы
 
-Directory::Directory(const std::string& name, AccessLevel accLevel) // Реализация конструктора
-    : Resource(name), level(accLevel) {} // Вызов конструктора предка и инициализация прав
+Directory::Directory(const std::string& name, AccessLevel accLevel) // Конструктор
+    : Resource(name), level(accLevel) {} // Инициализация
 
-AccessLevel Directory::getAccessLevel() const { // Геттер уровня доступа
-    return level; // Возврат уровня
+AccessLevel Directory::getAccessLevel() const { // Получить права
+    return level; // Возврат
 } // Конец метода
 
-void Directory::setAccessLevel(AccessLevel newLevel) { // Сеттер уровня
-    level = newLevel; // Запись уровня
+void Directory::setAccessLevel(AccessLevel newLevel) { // Установить права
+    level = newLevel; // Сохранить
 } // Конец метода
 
-void Directory::addResource(std::unique_ptr<Resource> resource) { // Добавление элемента в вектор
-    if (resource) { // Если передан не нулевой указатель
-        children.push_back(std::move(resource)); // Перемещаем владение указателем в конец вектора
+void Directory::addResource(std::unique_ptr<Resource> resource) { // Добавить ребенка
+    if (resource) { // Если не нулл
+        children.push_back(std::move(resource)); // Перемещаем в вектор
     } // Конец if
 } // Конец метода
 
-const std::vector<std::unique_ptr<Resource>>& Directory::getChildren() const { // Геттер детей (для записи в файл)
-    return children; // Возвращаем константную ссылку на вектор
+const std::vector<std::unique_ptr<Resource>>& Directory::getChildren() const { // Получить детей
+    return children; // Возврат
 } // Конец метода
 
-void Directory::collectAll(std::vector<const Resource*>& list) const { // Сбор всех вложенных элементов в один плоский список
-    list.push_back(this); // Добавляем саму себя в список
-    for (const auto& child : children) { // Проходим по всем прямым детям
-        if (child->isDirectory()) { // Если ребенок это папка
-            dynamic_cast<const Directory*>(child.get())->collectAll(list); // Кастуем к папке и вызываем сбор рекурсивно
-        } else { // Если это файл
-            list.push_back(child.get()); // Просто добавляем в список
+void Directory::collectAll(std::vector<const Resource*>& list) const { // Сбор всех
+    list.push_back(this); // Добавляем себя
+    for (const auto& child : children) { // Цикл по детям
+        if (child->isDirectory()) { // Если папка
+            dynamic_cast<const Directory*>(child.get())->collectAll(list); // Рекурсия
+        } else { // Если файл
+            list.push_back(child.get()); // Добавляем
         } // Конец if
     } // Конец цикла
 } // Конец метода
 
 void Directory::sortChildren(const std::function<bool(const std::unique_ptr<Resource>&, const std::unique_ptr<Resource>&)>& comp) { // Сортировка
-    std::sort(children.begin(), children.end(), comp); // Сортируем прямых детей с помощью переданного правила (функтора)
-    for (auto& child : children) { // Пробегаемся по детям
-        if (child->isDirectory()) { // Если встретили папку
-            dynamic_cast<Directory*>(child.get())->sortChildren(comp); // Запускаем сортировку внутри нее рекурсивно
+    std::sort(children.begin(), children.end(), comp); // Сортируем текущий уровень
+    for (auto& child : children) { // Цикл
+        if (child->isDirectory()) { // Если папка
+            dynamic_cast<Directory*>(child.get())->sortChildren(comp); // Сортируем внутри рекурсивно
         } // Конец if
     } // Конец цикла
 } // Конец метода
 
-bool Directory::removeResource(const std::string& targetName, AccessLevel userLevel) { // Удаление элемента с проверкой ACL
-    auto it = std::find_if(children.begin(), children.end(), // Ищем элемент в векторе с помощью алгоритма
-                           [&targetName](const std::unique_ptr<Resource>& res) { // Лямбда-функция проверки
-                               return res->getName() == targetName; // Вернет true, если имена совпали
-                           }); // Конец поиска
-
-    if (it != children.end()) { // Если элемент найден в текущей папке
-        if (userLevel < this->level) { // Проверяем, хватает ли прав на удаление
-            throw FileSystemException("Отказано в доступе: недостаточно прав для удаления"); // Бросаем исключение
-        } // Конец if
-        children.erase(it);  // Стираем элемент вектора (unique_ptr автоматически очистит память каскадно)
-        return true; // Сигнализируем об успехе
-    } // Конец if
-
-    for (auto& child : children) { // Если не нашли, ищем глубже по дереву
-        if (child->isDirectory()) { // Если ребенок - папка
-            auto dir = dynamic_cast<Directory*>(child.get()); // Приводим к типу Directory
-            if (dir->removeResource(targetName, userLevel)) { // Запускаем рекурсивное удаление
-                return true; // Если где-то в глубине удалилось - выходим с успехом
-            } // Конец if
-        } // Конец if
-    } // Конец цикла
-    return false; // Элемент вообще не найден
-} // Конец метода
-
-std::unique_ptr<Resource> Directory::detachResource(const std::string& targetName, AccessLevel userLevel) { // Отсоединение ресурса для перемещения
-    auto it = std::find_if(children.begin(), children.end(), [&targetName](const std::unique_ptr<Resource>& res) { // Ищем элемент
-        return res->getName() == targetName; // Сравниваем имена
+bool Directory::removeResource(const std::string& targetName, AccessLevel userLevel) { // Удаление
+    auto it = std::find_if(children.begin(), children.end(), [&targetName](const std::unique_ptr<Resource>& res) { // Поиск
+        return res->getName() == targetName; // Сравнение
     }); // Конец поиска
-    if (it != children.end()) { // Если элемент найден
-        if (userLevel < this->level) { // Защита от перемещения файла без прав
-            throw FileSystemException("Отказано в доступе при извлечении из папки '" + getName() + "'"); // Ошибка
-        } // Конец if
-        auto detached = std::move(*it); // Забираем права на управление памятью (std::move)
-        children.erase(it); // Удаляем пустую ячейку из вектора родителя
-        return detached; // Возвращаем умный указатель
+    if (it != children.end()) { // Если нашли
+        if (userLevel < this->level) throw FileSystemException("Недостаточно прав для удаления"); // ACL
+        children.erase(it); // Удаление
+        return true; // Успех
     } // Конец if
-    for (auto& child : children) { // Погружаемся в дочерние папки
+    for (auto& child : children) { // Рекурсия
         if (child->isDirectory()) { // Если папка
-            auto dir = dynamic_cast<Directory*>(child.get()); // Безопасное приведение
-            auto detached = dir->detachResource(targetName, userLevel); // Рекурсивный поиск на отрыв
-            if (detached) return detached; // Если нашли и оторвали - пробрасываем наверх
+            if (dynamic_cast<Directory*>(child.get())->removeResource(targetName, userLevel)) return true; // Ищем глубже
         } // Конец if
     } // Конец цикла
-    return nullptr; // Если обошли всё и не нашли - возвращаем пустой указатель
+    return false; // Не нашли
 } // Конец метода
 
-Directory* Directory::findDirectory(const std::string& targetName) { // Поиск папки (для получения целевой папки при перемещении)
-    if (this->getName() == targetName) return this; // Если текущая папка - искомая, возвращаем себя
-    for (const auto& child : children) { // Идем по детям
+std::unique_ptr<Resource> Directory::detachResource(const std::string& targetName, AccessLevel userLevel) { // Отрыв
+    auto it = std::find_if(children.begin(), children.end(), [&targetName](const std::unique_ptr<Resource>& res) { // Поиск
+        return res->getName() == targetName; // Сравнение
+    }); // Конец поиска
+    if (it != children.end()) { // Если нашли
+        if (userLevel < this->level) throw FileSystemException("Отказано в доступе"); // ACL
+        auto detached = std::move(*it); // Забираем права
+        children.erase(it); // Удаляем из вектора
+        return detached; // Возвращаем
+    } // Конец if
+    for (auto& child : children) { // Рекурсия
         if (child->isDirectory()) { // Если папка
-            auto dir = dynamic_cast<Directory*>(child.get()); // Кастуем
-            auto found = dir->findDirectory(targetName); // Ищем рекурсивно
-            if (found) return found; // Нашли внутри - возвращаем
+            auto detached = dynamic_cast<Directory*>(child.get())->detachResource(targetName, userLevel); // Ищем глубже
+            if (detached) return detached; // Возвращаем
         } // Конец if
     } // Конец цикла
-    return nullptr; // Не нашли такую папку
+    return nullptr; // Не нашли
 } // Конец метода
 
-size_t Directory::calculateSize() const { // Подсчет размера всей ветки
-    size_t totalSize = 0; // Накопитель
-    for (const auto& child : children) { // Обходим прямых детей
-        totalSize += child->calculateSize(); // Суммируем их размеры (у папок рекурсивно)
+Directory* Directory::findDirectory(const std::string& targetName) { // Поиск папки
+    if (this->getName() == targetName) return this; // Нашли себя
+    for (const auto& child : children) { // Цикл
+        if (child->isDirectory()) { // Если папка
+            auto found = dynamic_cast<Directory*>(child.get())->findDirectory(targetName); // Ищем внутри
+            if (found) return found; // Возвращаем
+        } // Конец if
     } // Конец цикла
-    return totalSize; // Возврат суммы
+    return nullptr; // Не нашли
 } // Конец метода
 
-void Directory::print(int depth) const { // Вывод папки в консоль
+const Resource* Directory::findResource(const std::string& targetName) const { // НОВОЕ: Поиск ресурса для клонирования
+    auto it = std::find_if(children.begin(), children.end(), [&targetName](const std::unique_ptr<Resource>& res) { // Поиск
+        return res->getName() == targetName; // Сравнение
+    }); // Конец поиска
+    if (it != children.end()) return it->get(); // Возвращаем указатель
+    for (const auto& child : children) { // Цикл
+        if (child->isDirectory()) { // Если папка
+            auto found = dynamic_cast<const Directory*>(child.get())->findResource(targetName); // Ищем внутри
+            if (found) return found; // Возвращаем
+        } // Конец if
+    } // Конец цикла
+    return nullptr; // Не нашли
+} // Конец метода
+
+size_t Directory::calculateSize() const { // Подсчет размера
+    size_t total = 0; // Сумма
+    for (const auto& child : children) total += child->calculateSize(); // Рекурсивное сложение
+    return total; // Возврат
+} // Конец метода
+
+void Directory::print(int depth) const { // Печать
     std::string indent(depth * 2, ' '); // Отступ
-    std::cout << indent << "+ [Dir] " << getName() // Маркер папки и имя
-              << " (Access: " << static_cast<int>(level) << ")\n"; // Уровень доступа
-    for (const auto& child : children) { // Обход детей
-        child->print(depth + 1); // Рекурсивный вывод с увеличенным отступом
-    } // Конец цикла
+    std::cout << indent << "+ [Dir] " << getName() << " (Access: " << static_cast<int>(level) << ")\n"; // Имя
+    for (const auto& child : children) child->print(depth + 1); // Дети
 } // Конец метода
 
-bool Directory::isDirectory() const { // Проверка на папку
-    return true; // Папка является папкой, возвращаем true
+bool Directory::isDirectory() const { // Флаг
+    return true; // Папка
+} // Конец метода
+
+std::unique_ptr<Resource> Directory::clone() const { // НОВОЕ: Рекурсивное клонирование ветки
+    auto copy = std::make_unique<Directory>(getName(), level); // Копия папки
+    for (const auto& child : children) { // Цикл по детям
+        copy->addResource(child->clone()); // Рекурсивный клон каждого ребенка
+    } // Конец цикла
+    return copy; // Возврат клона
 } // Конец метода

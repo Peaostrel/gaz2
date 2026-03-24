@@ -1,167 +1,113 @@
-#define NOMINMAX // Отключаем конфликтующие макросы min и max из Windows API
-#include <iostream> // Подключаем библиотеку ввода/вывода
-#include <string> // Подключаем библиотеку для работы со строками
-#include <limits> // Подключаем библиотеку лимитов для очистки буфера
+#define NOMINMAX // Защита от макросов Windows
+#include <iostream> // Ввод вывод
+#include <string> // Строки
+#include <limits> // Лимиты
 
-#ifdef _WIN32 // Если сборка идет под ОС Windows
-#include <windows.h> // Подключаем WinAPI для работы с кодировкой консоли
-#endif // Конец блока для Windows
+#ifdef _WIN32 // ОС Windows
+#include <windows.h> // WinAPI
+#endif // Конец
 
-#include "ArchiveManager.h" // Подключаем заголовочный файл нашего менеджера архива
-#include "FileSystemException.h" // Подключаем класс наших кастомных исключений
+#include "ArchiveManager.h" // Менеджер
+#include "FileSystemException.h" // Ошибки
 
-void printMenu() { // Объявляем функцию вывода меню на экран
-    std::cout << "\n=== Меню Виртуального Архива ===\n"; // Шапка меню
-    std::cout << "1. Создать папку\n"; // Пункт 1: создание папки
-    std::cout << "2. Создать файл\n"; // Пункт 2: создание файла
-    std::cout << "3. Вывести дерево архива\n"; // Пункт 3: печать структуры
-    std::cout << "4. Глобальный аудит\n"; // Пункт 4: статистика
-    std::cout << "5. Поиск по маске (Regex)\n"; // Пункт 5: поиск по регуляркам
-    std::cout << "6. Сортировка (1-Имя, 2-Размер, 3-Дата)\n"; // Пункт 6: сортировка
-    std::cout << "7. Выгрузить в CSV\n"; // Пункт 7: экспорт в таблицу
-    std::cout << "8. Удалить ресурс (рекурсивно)\n"; // Пункт 8: удаление ветки
-    std::cout << "9. Переместить ресурс (std::move)\n"; // Пункт 9: смена родителя
-    std::cout << "10. Поиск текста внутри файлов папки\n"; // Пункт 10: поиск по контенту
-    std::cout << "11. Сохранить архив (archive.dat)\n"; // Пункт 11: бинарная сериализация
-    std::cout << "12. Загрузить архив (archive.dat)\n"; // Пункт 12: десериализация
-    std::cout << "0. Выход\n"; // Пункт 0: завершение работы
-    std::cout << "Выбор: "; // Приглашение к вводу
-} // Конец функции меню
+void printMenu() { // Меню
+    std::cout << "\n=== Меню Виртуального Архива ===\n"; // Шапка
+    std::cout << "1. Создать папку\n"; // 1
+    std::cout << "2. Создать файл\n"; // 2
+    std::cout << "3. Вывести дерево архива\n"; // 3
+    std::cout << "4. Глобальный аудит\n"; // 4
+    std::cout << "5. Поиск по маске (Regex)\n"; // 5
+    std::cout << "6. Сортировка (1-Имя, 2-Размер, 3-Дата)\n"; // 6
+    std::cout << "7. Выгрузить в CSV\n"; // 7
+    std::cout << "8. Удалить ресурс (рекурсивно)\n"; // 8
+    std::cout << "9. Переместить ресурс (std::move)\n"; // 9
+    std::cout << "10. Поиск текста внутри файлов папки\n"; // 10
+    std::cout << "13. Копировать ресурс (глубокая копия)\n"; // 13 НОВОЕ
+    std::cout << "14. Фильтрация по дате\n"; // 14 НОВОЕ
+    std::cout << "11. Сохранить архив (archive.dat)\n"; // 11
+    std::cout << "12. Загрузить архив (archive.dat)\n"; // 12
+    std::cout << "0. Выход\n"; // 0
+    std::cout << "Выбор: "; // Приглашение
+} // Конец функции
 
-void clearInput() { // Функция для очистки сломанного потока ввода
-    std::cin.clear(); // Сбрасываем флаги ошибок (например, если ввели букву вместо числа)
-    // НИЖЕ ИСПРАВЛЕННАЯ СТРОКА: Оборачиваем max в скобки -> (max)(), чтобы обмануть макрос Windows
-    std::cin.ignore((std::numeric_limits<std::streamsize>::max)(), '\n'); // Игнорируем весь мусор в буфере до символа переноса строки
-} // Конец функции очистки
+void clearInput() { // Очистка
+    std::cin.clear(); // Сброс
+    std::cin.ignore((std::numeric_limits<std::streamsize>::max)(), '\n'); // Игнор с защитой (max)()
+} // Конец функции
 
-int main() { // Главная точка входа в программу
-#ifdef _WIN32 // Снова проверяем, Windows ли это
-    SetConsoleOutputCP(CP_UTF8); // Устанавливаем кодировку UTF-8 для вывода в консоль
-    SetConsoleCP(CP_UTF8); // Устанавливаем кодировку UTF-8 для ввода из консоли
-#else // Если это Unix-система (Linux/macOS)
-    setlocale(LC_ALL, "ru_RU.UTF-8"); // Устанавливаем русскую локаль и UTF-8 стандартно
-#endif // Конец фикса кодировок
+int main() { // Старт
+#ifdef _WIN32 // Фикс консоли
+    SetConsoleOutputCP(CP_UTF8); // Вывод
+    SetConsoleCP(CP_UTF8); // Ввод
+#else // Unix
+    setlocale(LC_ALL, "ru_RU.UTF-8"); // Локаль
+#endif // Конец
 
-    ArchiveManager archive; // Создаем объект менеджера (внутри него создается корень root)
-    archive.setCurrentUserLevel(AccessLevel::ADMIN); // Ставим права администратора по умолчанию для тестов
-    int choice = -1; // Инициализируем переменную для хранения выбора пользователя
+    ArchiveManager archive; // Менеджер
+    archive.setCurrentUserLevel(AccessLevel::ADMIN); // Права для тестов
+    int choice = -1; // Переменная
 
-    std::cout << "Система запущена. Логирование активно.\n"; // Приветственное сообщение
+    std::cout << "Система запущена. Логирование активно.\n"; // Сообщение
 
-    while (choice != 0) { // Запускаем бесконечный цикл, пока пользователь не введет 0
-        printMenu(); // Печатаем меню
-        if (!(std::cin >> choice)) { // Пытаемся считать число. Если ввели текст или спецсимвол:
-            clearInput(); // Вызываем нашу починенную функцию очистки буфера
-            std::cout << "Ошибка ввода. Введите число.\n"; // Сообщаем об ошибке
-            continue; // Запускаем цикл заново (пропускаем код ниже)
-        } // Конец проверки ввода
+    while (choice != 0) { // Цикл
+        printMenu(); // Вывод меню
+        if (!(std::cin >> choice)) { // Проверка
+            clearInput(); // Чистка
+            std::cout << "Ошибка ввода.\n"; // Ошибка
+            continue; // Пропуск
+        } // Конец if
 
-        try { // Начинаем блок перехвата исключений нашей файловой системы
-            switch (choice) { // Оператор множественного выбора на основе введенного числа
-                case 1: { // Если выбрали 1 (Создать папку)
-                    std::string name; // Переменная для имени папки
-                    int level; // Переменная для уровня доступа
-                    std::cout << "Имя папки: "; // Просим ввести имя
-                    std::cin >> name; // Считываем имя
-                    std::cout << "Уровень доступа (0-GUEST, 1-USER, 2-ADMIN): "; // Просим ввести права
-                    if (!(std::cin >> level) || level < 0 || level > 2) { // Проверяем, что ввели число от 0 до 2
-                        clearInput(); // Чистим буфер при ошибке
-                        throw FileSystemException("Некорректный уровень доступа."); // Генерируем исключение
-                    } // Конец проверки прав
-                    archive.addDirectory(name, static_cast<AccessLevel>(level)); // Добавляем папку, преобразуя int в enum
-                    std::cout << "[+] Папка успешно создана.\n"; // Сообщаем об успехе
-                    break; // Выходим из switch
+        try { // Перехват
+            switch (choice) { // Выбор
+                case 1: { // Папка
+                    std::string name; int level; // Имя, права
+                    std::cout << "Имя папки: "; std::cin >> name; // Ввод
+                    std::cout << "Уровень доступа (0-GUEST, 1-USER, 2-ADMIN): "; // Ввод
+                    if (!(std::cin >> level) || level < 0 || level > 2) { clearInput(); throw FileSystemException("Некорректный уровень."); } // Проверка
+                    archive.addDirectory(name, static_cast<AccessLevel>(level)); std::cout << "[+] Создано.\n"; break; // Успех
                 }
-                case 2: { // Если выбрали 2 (Создать файл)
-                    std::string name, ext, content; // Переменные для имени, расширения и текста внутри
-                    size_t size; // Переменная для размера
-                    std::cout << "Имя файла: "; // Просим имя
-                    std::cin >> name; // Читаем имя
-                    std::cout << "Расширение (без точки): "; // Просим формат
-                    std::cin >> ext; // Читаем формат
-                    std::cout << "Размер (байт): "; // Просим заявленный размер
-                    if (!(std::cin >> size)) { // Проверяем на корректность ввода
-                        clearInput(); // Чистим
-                        throw FileSystemException("Некорректный размер файла."); // Кидаем ошибку
-                    } // Конец проверки
-                    std::cout << "Введите текстовое содержимое (или '-' чтобы оставить пустым): "; // Спрашиваем текст для поиска
-                    std::cin >> content; // Читаем строку
-                    archive.addFile(name, ext, size, content); // Вызываем добавление файла с контентом
-                    std::cout << "[+] Файл успешно создан.\n"; // Сообщаем об успехе
-                    break; // Выходим
+                case 2: { // Файл
+                    std::string name, ext, content; size_t size; // Поля
+                    std::cout << "Имя файла: "; std::cin >> name; // Ввод
+                    std::cout << "Расширение: "; std::cin >> ext; // Ввод
+                    std::cout << "Размер: "; 
+                    if (!(std::cin >> size)) { clearInput(); throw FileSystemException("Некорректный размер."); } // Проверка
+                    std::cout << "Текст (или '-'): "; std::cin >> content; // Текст
+                    archive.addFile(name, ext, size, content); std::cout << "[+] Создано.\n"; break; // Успех
                 }
-                case 3: // Если выбрали 3
-                    archive.printTree(); // Печатаем рекурсивное дерево
-                    break; // Выходим
-                case 4: // Если выбрали 4
-                    archive.globalAudit(); // Выводим статистику хранилища
-                    break; // Выходим
-                case 5: { // Если выбрали 5
-                    std::string mask; // Переменная для маски
-                    std::cout << "Regex маска: "; // Запрос маски
-                    std::cin >> mask; // Ввод
-                    archive.searchByMask(mask); // Запуск поиска
-                    break; // Выходим
+                case 3: archive.printTree(); break; // Дерево
+                case 4: archive.globalAudit(); break; // Аудит (Теперь с полным подсчетом)
+                case 5: { // Маска
+                    std::string mask; std::cout << "Regex маска: "; std::cin >> mask; archive.searchByMask(mask); break; // Поиск
                 }
-                case 6: { // Если выбрали 6
-                    int criteria; // Переменная для способа сортировки
-                    std::cout << "Критерий (1-Имя, 2-Размер, 3-Дата): "; // Выводим варианты
-                    if (!(std::cin >> criteria) || criteria < 1 || criteria > 3) { // Проверяем ввод
-                        clearInput(); // Очистка
-                        throw FileSystemException("Некорректный критерий сортировки."); // Бросаем ошибку
-                    } // Конец проверки
-                    archive.sortResources(criteria); // Запускаем сортировку функторами
-                    break; // Выход
+                case 6: { // Сортировка
+                    int crit; std::cout << "Критерий (1-Имя, 2-Размер, 3-Дата): "; 
+                    if (!(std::cin >> crit) || crit < 1 || crit > 3) throw FileSystemException("Ошибка"); // Проверка
+                    archive.sortResources(crit); break; // Вызов
                 }
-                case 7: // Если 7
-                    archive.exportToCSV("export.csv"); // Выгружаем плоское представление в таблицу
-                    break; // Выход
-                case 8: { // Если 8 (Удаление)
-                    std::string name; // Имя цели
-                    std::cout << "Имя для удаления: "; // Запрос
-                    std::cin >> name; // Ввод
-                    archive.deleteResource(name); // Удаляем рекурсивно с проверкой ACL
-                    break; // Выход
+                case 7: archive.exportToCSV("export.csv"); break; // Экспорт
+                case 8: { // Удаление
+                    std::string name; std::cout << "Имя для удаления: "; std::cin >> name; archive.deleteResource(name); break; // Вызов
                 }
-                case 9: { // Если 9 (Перемещение)
-                    std::string res, dir; // Имя ресурса и имя целевой папки
-                    std::cout << "Что перемещаем: "; // Запрос
-                    std::cin >> res; // Ввод
-                    std::cout << "Куда: "; // Запрос
-                    std::cin >> dir; // Ввод
-                    archive.moveResource(res, dir); // Меняем родителя через std::move
-                    break; // Выход
+                case 9: { // Перемещение
+                    std::string res, dir; std::cout << "Что: "; std::cin >> res; std::cout << "Куда: "; std::cin >> dir; archive.moveResource(res, dir); break; // Вызов
                 }
-                case 10: { // Если 10 (Поиск по тексту)
-                    std::string dirName, query; // Целевая папка и искомый текст
-                    std::cout << "В какой папке искать (введите 'root' для корня): "; // Спрашиваем
-                    std::cin >> dirName; // Вводим
-                    std::cout << "Какой текст ищем: "; // Спрашиваем
-                    std::cin >> query; // Вводим
-                    archive.searchContentInDir(dirName, query); // Запускаем поиск по контенту
-                    break; // Выход
+                case 10: { // Контент
+                    std::string dir, q; std::cout << "Папка ('root'): "; std::cin >> dir; std::cout << "Текст: "; std::cin >> q; archive.searchContentInDir(dir, q); break; // Вызов
                 }
-                case 11: // Если 11
-                    archive.saveToFile("archive.dat"); // Запускаем бинарную сериализацию всего дерева
-                    std::cout << "[OK] Сохранено.\n"; // Уведомляем
-                    break; // Выход
-                case 12: // Если 12
-                    archive.loadFromFile("archive.dat"); // Загружаем бинарник с проверкой магического числа
-                    std::cout << "[OK] Загружено.\n"; // Уведомляем
-                    break; // Выход
-                case 0: // Если 0
-                    std::cout << "Завершение работы...\n"; // Прощаемся
-                    break; // Выходим (цикл while завершится на следующей итерации)
-                default: // Если ввели цифру, которой нет в меню
-                    std::cout << "Неизвестная команда.\n"; // Ругаемся
-                    break; // Выходим
-            } // Конец оператора switch
-        } catch (const FileSystemException& e) { // Ловим ошибки нашей логики ФС
-            std::cerr << "[ОШИБКА ФС]: " << e.what() << "\n"; // Печатаем в поток ошибок
-        } catch (const std::exception& e) { // Ловим критические сбои C++
-            std::cerr << "[КРИТИЧЕСКАЯ ОШИБКА]: " << e.what() << "\n"; // Печатаем в поток ошибок
-        } // Конец блока try-catch
-    } // Конец цикла while
-
-    return 0; // Сообщаем ОС, что программа завершилась без системных ошибок
-} // Конец функции main
+                case 13: { // НОВОЕ: Копирование
+                    std::string res, dir; std::cout << "Что копируем: "; std::cin >> res; std::cout << "Куда: "; std::cin >> dir; archive.copyResource(res, dir); break; // Вызов
+                }
+                case 14: { // НОВОЕ: Фильтрация по дате
+                    std::string start, end; std::cout << "Начало (YYYY-MM-DD): "; std::cin >> start; std::cout << "Конец (YYYY-MM-DD): "; std::cin >> end; archive.filterByDate(start, end); break; // Вызов
+                }
+                case 11: archive.saveToFile("archive.dat"); std::cout << "[OK] Сохранено.\n"; break; // Сохранить
+                case 12: archive.loadFromFile("archive.dat"); std::cout << "[OK] Загружено.\n"; break; // Загрузить
+                case 0: std::cout << "Выход...\n"; break; // Выход
+                default: std::cout << "Неизвестная команда.\n"; break; // Неизвестно
+            } // Конец switch
+        } catch (const FileSystemException& e) { std::cerr << "[ОШИБКА ФС]: " << e.what() << "\n"; } // Перехват
+        catch (const std::exception& e) { std::cerr << "[КРИТИЧЕСКАЯ ОШИБКА]: " << e.what() << "\n"; } // Перехват
+    } // Конец цикла
+    return 0; // Завершение
+} // Конец main
