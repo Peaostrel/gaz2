@@ -6,13 +6,22 @@
 #include "AccessLevel.h"
 #include <memory>
 #include <string>
+#include <fstream>
+#include <cstdint>
 
 class ArchiveManager {
 private:
     std::unique_ptr<Directory> root;
     AccessLevel currentUserLevel;
+    const uint32_t MAGIC_NUMBER = 0xFEEDBEEF;
 
     void logOperation(const std::string& operation, bool success, const std::string& details) const;
+
+    void serializeResource(const Resource* res, std::ofstream& out) const;
+    std::unique_ptr<Resource> deserializeResource(std::ifstream& in) const;
+
+    void writeString(std::ofstream& out, const std::string& str) const;
+    std::string readString(std::ifstream& in) const;
 
 public:
     ArchiveManager();
@@ -25,6 +34,9 @@ public:
 
     void printTree() const;
     void globalAudit() const;
+
+    void saveToFile(const std::string& filename) const;
+    void loadFromFile(const std::string& filename);
 };
 
 #endif // ARCHIVEMANAGER_H

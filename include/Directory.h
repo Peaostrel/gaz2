@@ -18,6 +18,7 @@ public:
     void setAccessLevel(AccessLevel newLevel);
 
     void addResource(std::unique_ptr<Resource> resource);
+    const std::vector<std::unique_ptr<Resource>>& getChildren() const;
 
     size_t calculateSize() const override;
     void print(int depth = 0) const override;
