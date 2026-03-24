@@ -1,26 +1,30 @@
-#ifndef FILE_H // Защита от повторного включения
+#ifndef FILE_H // Защита от двойного включения
 #define FILE_H // Макрос защиты
 
-#include "Resource.h" // Подключаем базовый класс ресурса
-#include <string> // Подключаем библиотеку строк
+#include "Resource.h" // Подключаем базовый ресурс
+#include <string> // Библиотека строк
 
-class File : public Resource { // Класс File наследуется от базового Resource
-private: // Скрытые поля файла
-    std::string extension; // Метаданные: расширение файла
-    size_t size; // Метаданные: размер файла в байтах
+class File : public Resource { // Класс файла, наследник ресурса
+private: // Приватные поля
+    std::string extension; // Расширение файла
+    size_t size; // Заявленный размер файла
+    std::string content; // НОВОЕ: Поле для хранения реального текста внутри файла
 
-public: // Публичные методы файла
-    File(const std::string& name, const std::string& ext, size_t fileSize = 0); // Конструктор с именем, расширением и размером
+public: // Публичные методы
+    File(const std::string& name, const std::string& ext, size_t fileSize = 0); // Конструктор
 
-    const std::string& getExtension() const; // Геттер для получения расширения
-    void setExtension(const std::string& ext); // Сеттер для установки расширения (с проверкой)
+    const std::string& getExtension() const; // Геттер расширения
+    void setExtension(const std::string& ext); // Сеттер расширения
     
-    size_t getSize() const; // Геттер для получения размера файла
-    void setSize(size_t newSize); // Сеттер для изменения размера
+    size_t getSize() const; // Геттер размера
+    void setSize(size_t newSize); // Сеттер размера
 
-    size_t calculateSize() const override; // Переопределение виртуального метода подсчета размера
-    void print(int depth = 0) const override; // Переопределение метода вывода в консоль
-    bool isDirectory() const override; // Переопределение флага проверки на папку
+    const std::string& getContent() const; // НОВОЕ: Геттер текстового содержимого
+    void setContent(const std::string& text); // НОВОЕ: Сеттер текстового содержимого
+
+    size_t calculateSize() const override; // Подсчет размера (с учетом текста)
+    void print(int depth = 0) const override; // Печать в консоль
+    bool isDirectory() const override; // Флаг папки
 }; // Конец класса
 
 #endif // FILE_H // Конец защиты

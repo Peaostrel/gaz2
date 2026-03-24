@@ -1,46 +1,54 @@
-#include "File.h" // Подключаем заголовок файла
-#include "FileSystemException.h" // Подключаем исключения
-#include <iostream> // Подключаем поток ввода-вывода
-#include <regex> // Подключаем регулярные выражения для проверки
+#include "File.h" // Заголовок
+#include "FileSystemException.h" // Ошибки
+#include <iostream> // Вывод
+#include <regex> // Регулярки
 
-File::File(const std::string& name, const std::string& ext, size_t fileSize) // Инициализация конструктора
-    : Resource(name), size(fileSize) { // Вызываем конструктор базового класса и инициализируем размер
-    setExtension(ext); // Проверяем и устанавливаем расширение через сеттер
+File::File(const std::string& name, const std::string& ext, size_t fileSize) // Конструктор
+    : Resource(name), size(fileSize), content("") { // Вызов предка и инициализация полей (контент пуст)
+    setExtension(ext); // Проверка и установка расширения
 } // Конец конструктора
 
-const std::string& File::getExtension() const { // Реализация геттера расширения
-    return extension; // Возвращаем расширение
+const std::string& File::getExtension() const { // Получить расширение
+    return extension; // Возврат
 } // Конец метода
 
-void File::setExtension(const std::string& ext) { // Реализация сеттера расширения
-    std::regex validExt("^[a-zA-Z0-9]*$"); // Регулярка: только латинские буквы и цифры, без точек
-    if (!std::regex_match(ext, validExt)) { // Проверяем строку на соответствие правилу
-        throw FileSystemException("Некорректный формат расширения файла: " + ext); // Если не совпало - ошибка
-    } // Конец проверки
-    extension = ext; // Сохраняем проверенное расширение
-} // Конец метода
-
-size_t File::getSize() const { // Реализация геттера размера
-    return size; // Возвращаем размер
-} // Конец метода
-
-void File::setSize(size_t newSize) { // Реализация сеттера размера
-    size = newSize; // Обновляем размер
-} // Конец метода
-
-size_t File::calculateSize() const { // Подсчет размера (для файла он равен его собственному размеру)
-    return size; // Возвращаем размер файла
-} // Конец метода
-
-void File::print(int depth) const { // Метод вывода дерева в консоль
-    std::string indent(depth * 2, ' '); // Генерируем отступы пробелами в зависимости от глубины
-    std::cout << indent << "- [File] " << getName(); // Печатаем маркер, имя
-    if (!extension.empty()) { // Если есть расширение
-        std::cout << "." << extension; // Печатаем точку и расширение
+void File::setExtension(const std::string& ext) { // Установить расширение
+    std::regex validExt("^[a-zA-Z0-9]*$"); // Только буквы и цифры
+    if (!std::regex_match(ext, validExt)) { // Если не совпало
+        throw FileSystemException("Некорректный формат расширения файла: " + ext); // Ошибка
     } // Конец if
-    std::cout << " (" << size << " bytes)\n"; // Печатаем размер и перенос строки
+    extension = ext; // Сохраняем
 } // Конец метода
 
-bool File::isDirectory() const { // Проверка на папку
-    return false; // Файл не является папкой, возвращаем false
+size_t File::getSize() const { // Получить заявленный размер
+    return size; // Возврат
+} // Конец метода
+
+void File::setSize(size_t newSize) { // Установить размер
+    size = newSize; // Сохраняем
+} // Конец метода
+
+const std::string& File::getContent() const { // Получить текст файла
+    return content; // Возвращаем строку
+} // Конец метода
+
+void File::setContent(const std::string& text) { // Записать текст в файл
+    content = text; // Сохраняем
+} // Конец метода
+
+size_t File::calculateSize() const { // Подсчет веса
+    return size + content.length(); // Реальный размер = заявленный байтаж + длина строки контента
+} // Конец метода
+
+void File::print(int depth) const { // Печать
+    std::string indent(depth * 2, ' '); // Отступы
+    std::cout << indent << "- [File] " << getName(); // Имя
+    if (!extension.empty()) { // Если есть формат
+        std::cout << "." << extension; // Выводим
+    } // Конец if
+    std::cout << " (" << calculateSize() << " bytes)\n"; // Выводим актуальный размер
+} // Конец метода
+
+bool File::isDirectory() const { // Проверка на тип
+    return false; // Это не папка
 } // Конец метода
