@@ -1,29 +1,29 @@
-#ifndef RESOURCE_H
-#define RESOURCE_H
+#ifndef RESOURCE_H // Защита от двойного включения файла
+#define RESOURCE_H // Установка макроса
 
-#include <string>
-#include <ctime>
+#include <string> // Подключение библиотеки строк
+#include <ctime> // Подключение библиотеки для работы со временем (дата создания)
 
-class Resource {
-private:
-    std::string name;
-    std::time_t creationDate;
+class Resource { // Объявление базового абстрактного класса
+private: // Приватная секция (инкапсуляция)
+    std::string name; // Поле для хранения имени ресурса
+    std::time_t creationDate; // Поле для хранения времени создания в формате Unix timestamp
 
-public:
-    Resource(const std::string& name);
-    virtual ~Resource() = default;
+public: // Публичный интерфейс
+    Resource(const std::string& name); // Конструктор, принимающий имя ресурса
+    virtual ~Resource() = default; // Виртуальный деструктор по умолчанию для корректного удаления наследников
 
-    Resource(const Resource&) = delete;
-    Resource& operator=(const Resource&) = delete;
+    Resource(const Resource&) = delete; // Явный запрет конструктора копирования (ресурс уникален)
+    Resource& operator=(const Resource&) = delete; // Явный запрет оператора присваивания копированием
 
-    const std::string& getName() const;
-    void setName(const std::string& newName);
-    std::time_t getCreationDate() const;
-    void updateCreationDate();
+    const std::string& getName() const; // Геттер для получения имени (возвращает константную ссылку)
+    void setName(const std::string& newName); // Сеттер для установки нового имени (с проверкой)
+    std::time_t getCreationDate() const; // Геттер для получения даты создания
+    void updateCreationDate(); // Метод для обновления даты создания на текущую
 
-    virtual size_t calculateSize() const = 0;
-    virtual void print(int depth = 0) const = 0;
-    virtual bool isDirectory() const = 0;
-};
+    virtual size_t calculateSize() const = 0; // Чисто виртуальный метод подсчета размера (делает класс абстрактным)
+    virtual void print(int depth = 0) const = 0; // Чисто виртуальный метод вывода в консоль (с отступами)
+    virtual bool isDirectory() const = 0; // Чисто виртуальный метод проверки, является ли объект папкой
+}; // Конец класса
 
-#endif // RESOURCE_H
+#endif // RESOURCE_H // Конец защиты

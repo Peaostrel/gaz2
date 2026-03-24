@@ -1,10 +1,10 @@
-#ifndef ACCESSLEVEL_H
-#define ACCESSLEVEL_H
+#ifndef ACCESSLEVEL_H // Если макрос не определен (защита от двойного включения)
+#define ACCESSLEVEL_H // Определяем макрос для этого файла
 
-enum class AccessLevel {
-    GUEST,
-    USER,
-    ADMIN
-};
+enum class AccessLevel { // Объявляем строго типизированное перечисление для прав
+    GUEST, // Уровень гостя (минимальные права, числовой эквивалент 0)
+    USER,  // Уровень обычного пользователя (числовой эквивалент 1)
+    ADMIN  // Уровень администратора (максимальные права, числовой эквивалент 2)
+}; // Конец перечисления
 
-#endif // ACCESSLEVEL_H
+#endif // ACCESSLEVEL_H (Конец защиты файла)

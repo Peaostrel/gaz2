@@ -1,47 +1,47 @@
-#ifndef ARCHIVEMANAGER_H
-#define ARCHIVEMANAGER_H
+#ifndef ARCHIVEMANAGER_H // Защита
+#define ARCHIVEMANAGER_H // Макрос
 
-#include "Directory.h"
-#include "File.h"
-#include "AccessLevel.h"
-#include <memory>
-#include <string>
-#include <fstream>
-#include <cstdint>
+#include "Directory.h" // Каталоги
+#include "File.h" // Файлы
+#include "AccessLevel.h" // Уровни доступа
+#include <memory> // Умные указатели
+#include <string> // Строки
+#include <fstream> // Файловые потоки
+#include <cstdint> // Фиксированные типы целых чисел
 
-class ArchiveManager {
-private:
-    std::unique_ptr<Directory> root;
-    AccessLevel currentUserLevel;
-    const uint32_t MAGIC_NUMBER = 0xFEEDBEEF;
+class ArchiveManager { // Менеджер управления всем деревом
+private: // Скрытая механика
+    std::unique_ptr<Directory> root; // Указатель на корень виртуальной ФС
+    AccessLevel currentUserLevel; // Текущий уровень прав пользователя
+    const uint32_t MAGIC_NUMBER = 0xFEEDBEEF; // Уникальное число для валидации бинарника архива
 
-    void logOperation(const std::string& operation, bool success, const std::string& details) const;
-    void serializeResource(const Resource* res, std::ofstream& out) const;
-    std::unique_ptr<Resource> deserializeResource(std::ifstream& in) const;
-    void writeString(std::ofstream& out, const std::string& str) const;
-    std::string readString(std::ifstream& in) const;
+    void logOperation(const std::string& operation, bool success, const std::string& details) const; // Функция логирования в текстовый файл
+    void serializeResource(const Resource* res, std::ofstream& out) const; // Рекурсивная побайтовая запись
+    std::unique_ptr<Resource> deserializeResource(std::ifstream& in) const; // Рекурсивное чтение байтов в дерево
+    void writeString(std::ofstream& out, const std::string& str) const; // Запись строки (длина + символы)
+    std::string readString(std::ifstream& in) const; // Чтение строки
 
-public:
-    ArchiveManager();
+public: // Интерфейс программы
+    ArchiveManager(); // Конструктор
 
-    void setCurrentUserLevel(AccessLevel level);
-    AccessLevel getCurrentUserLevel() const;
+    void setCurrentUserLevel(AccessLevel level); // Установка прав
+    AccessLevel getCurrentUserLevel() const; // Получение прав
 
-    void addDirectory(const std::string& name, AccessLevel level);
-    void addFile(const std::string& name, const std::string& ext, size_t size);
+    void addDirectory(const std::string& name, AccessLevel level); // Добавить папку в корень
+    void addFile(const std::string& name, const std::string& ext, size_t size); // Добавить файл в корень
 
-    void printTree() const;
-    void globalAudit() const;
+    void printTree() const; // Вывод всего дерева
+    void globalAudit() const; // Вывод статистики
 
-    void saveToFile(const std::string& filename) const;
-    void loadFromFile(const std::string& filename);
+    void saveToFile(const std::string& filename) const; // Инициировать сериализацию
+    void loadFromFile(const std::string& filename); // Инициировать десериализацию
 
-    void searchByMask(const std::string& maskStr) const;
-    void sortResources(int criteria);
-    void exportToCSV(const std::string& filename) const;
+    void searchByMask(const std::string& maskStr) const; // Поиск по Regex
+    void sortResources(int criteria); // Сортировка функторами
+    void exportToCSV(const std::string& filename) const; // Выгрузка в таблицу
     
-    // Новая функция удаления
-    void deleteResource(const std::string& name);
-};
+    void deleteResource(const std::string& name); // Удаление узла
+    void moveResource(const std::string& resName, const std::string& destDirName); // Новое: перемещение узла
+}; // Конец класса
 
-#endif // ARCHIVEMANAGER_H
+#endif // ARCHIVEMANAGER_H // Защита
