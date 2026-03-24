@@ -1,0 +1,17 @@
+# Сборка
+build/
+cmake-build-*/
+
+# Среды разработки
+.vscode/
+.idea/
+
+# Исполняемые файлы
+*.exe
+*.out
+*.app
+
+# Локальные файлы проекта (по ТЗ)
+archive.dat
+history.log
+*.csv
