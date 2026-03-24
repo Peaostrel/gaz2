@@ -18,8 +18,9 @@ void printMenu() {
     std::cout << "5. Поиск по маске (Regex)\n";
     std::cout << "6. Сортировка (1-Имя, 2-Размер, 3-Дата)\n";
     std::cout << "7. Выгрузить в CSV\n";
-    std::cout << "8. Сохранить архив (archive.dat)\n";
-    std::cout << "9. Загрузить архив (archive.dat)\n";
+    std::cout << "8. Удалить ресурс (рекурсивно)\n";
+    std::cout << "9. Сохранить архив (archive.dat)\n";
+    std::cout << "10. Загрузить архив (archive.dat)\n";
     std::cout << "0. Выход\n";
     std::cout << "Выбор: ";
 }
@@ -38,6 +39,8 @@ int main() {
 #endif
 
     ArchiveManager archive;
+    // По умолчанию ставим уровень ADMIN, чтобы можно было без проблем удалять всё
+    archive.setCurrentUserLevel(AccessLevel::ADMIN);
     int choice = -1;
 
     std::cout << "Система запущена. Логирование активно.\n";
@@ -108,11 +111,18 @@ int main() {
                 case 7:
                     archive.exportToCSV("export.csv");
                     break;
-                case 8:
+                case 8: {
+                    std::string name;
+                    std::cout << "Введите имя файла или папки для удаления: ";
+                    std::cin >> name;
+                    archive.deleteResource(name);
+                    break;
+                }
+                case 9:
                     archive.saveToFile("archive.dat");
                     std::cout << "[OK] Данные сериализованы в archive.dat\n";
                     break;
-                case 9:
+                case 10:
                     archive.loadFromFile("archive.dat");
                     std::cout << "[OK] Данные успешно загружены из archive.dat\n";
                     break;

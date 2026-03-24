@@ -234,3 +234,21 @@ void ArchiveManager::loadFromFile(const std::string& filename) {
         throw FileSystemException("Ошибка структуры при загрузке архива.");
     }
 }
+
+void ArchiveManager::deleteResource(const std::string& name) {
+    try {
+        if (name == root->getName()) {
+            throw FileSystemException("Невозможно удалить корневой каталог!");
+        }
+        bool success = root->removeResource(name, currentUserLevel);
+        if (success) {
+            logOperation("DELETE", true, "Удален ресурс и вся его ветка: " + name);
+            std::cout << "[+] Ресурс '" << name << "' успешно удален.\n";
+        } else {
+            throw FileSystemException("Ресурс с именем '" + name + "' не найден.");
+        }
+    } catch (const FileSystemException& e) {
+        logOperation("DELETE", false, e.what());
+        throw;
+    }
+}

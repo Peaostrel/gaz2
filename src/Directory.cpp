@@ -1,4 +1,5 @@
 #include "Directory.h"
+#include "FileSystemException.h"
 #include <iostream>
 #include <algorithm>
 
@@ -41,6 +42,35 @@ void Directory::sortChildren(const std::function<bool(const std::unique_ptr<Reso
             dynamic_cast<Directory*>(child.get())->sortChildren(comp);
         }
     }
+}
+
+bool Directory::removeResource(const std::string& targetName, AccessLevel userLevel) {
+    // Ищем элемент среди прямых потомков
+    auto it = std::find_if(children.begin(), children.end(),
+                           [&targetName](const std::unique_ptr<Resource>& res) {
+                               return res->getName() == targetName;
+                           });
+
+    if (it != children.end()) {
+        // Проверка ACL: уровень пользователя должен быть >= уровня текущей (родительской) папки
+        if (userLevel < this->level) {
+            throw FileSystemException("Отказано в доступе: недостаточно прав для удаления из папки '" + getName() + "'");
+        }
+        // Удаляем из вектора. unique_ptr автоматически вызовет деструкторы всей вложенной ветки
+        children.erase(it); 
+        return true;
+    }
+
+    // Если не нашли, ищем рекурсивно в подпапках
+    for (auto& child : children) {
+        if (child->isDirectory()) {
+            auto dir = dynamic_cast<Directory*>(child.get());
+            if (dir->removeResource(targetName, userLevel)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 size_t Directory::calculateSize() const {

@@ -23,6 +23,9 @@ public:
 
     void collectAll(std::vector<const Resource*>& list) const;
     void sortChildren(const std::function<bool(const std::unique_ptr<Resource>&, const std::unique_ptr<Resource>&)>& comp);
+    
+    // Метод для рекурсивного удаления
+    bool removeResource(const std::string& targetName, AccessLevel userLevel);
 
     size_t calculateSize() const override;
     void print(int depth = 0) const override;
