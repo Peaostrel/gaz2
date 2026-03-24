@@ -1,6 +1,11 @@
 #include <iostream>
 #include <string>
 #include <limits>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "ArchiveManager.h"
 #include "FileSystemException.h"
 
@@ -22,7 +27,13 @@ void clearInput() {
 }
 
 int main() {
-    setlocale(LC_ALL, "Russian");
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#else
+    setlocale(LC_ALL, "ru_RU.UTF-8");
+#endif
+
     ArchiveManager archive;
     int choice = -1;
 
