@@ -22,6 +22,17 @@ const std::vector<std::unique_ptr<Resource>>& Directory::getChildren() const {
     return children;
 }
 
+void Directory::collectAll(std::vector<const Resource*>& list) const {
+    list.push_back(this);
+    for (const auto& child : children) {
+        if (child->isDirectory()) {
+            dynamic_cast<const Directory*>(child.get())->collectAll(list);
+        } else {
+            list.push_back(child.get());
+        }
+    }
+}
+
 size_t Directory::calculateSize() const {
     size_t totalSize = 0;
     for (const auto& child : children) {

@@ -15,8 +15,9 @@ void printMenu() {
     std::cout << "2. Создать файл\n";
     std::cout << "3. Вывести дерево архива\n";
     std::cout << "4. Глобальный аудит\n";
-    std::cout << "5. Сохранить архив (archive.dat)\n";
-    std::cout << "6. Загрузить архив (archive.dat)\n";
+    std::cout << "5. Поиск по маске (Regex)\n";
+    std::cout << "6. Сохранить архив (archive.dat)\n";
+    std::cout << "7. Загрузить архив (archive.dat)\n";
     std::cout << "0. Выход\n";
     std::cout << "Выбор: ";
 }
@@ -85,11 +86,18 @@ int main() {
                 case 4:
                     archive.globalAudit();
                     break;
-                case 5:
+                case 5: {
+                    std::string mask;
+                    std::cout << "Введите маску Regex (например, ^test для начала имени с 'test'): ";
+                    std::cin >> mask;
+                    archive.searchByMask(mask);
+                    break;
+                }
+                case 6:
                     archive.saveToFile("archive.dat");
                     std::cout << "[OK] Данные сериализованы в archive.dat\n";
                     break;
-                case 6:
+                case 7:
                     archive.loadFromFile("archive.dat");
                     std::cout << "[OK] Данные успешно загружены из archive.dat\n";
                     break;

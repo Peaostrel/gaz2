@@ -16,10 +16,8 @@ private:
     const uint32_t MAGIC_NUMBER = 0xFEEDBEEF;
 
     void logOperation(const std::string& operation, bool success, const std::string& details) const;
-
     void serializeResource(const Resource* res, std::ofstream& out) const;
     std::unique_ptr<Resource> deserializeResource(std::ifstream& in) const;
-
     void writeString(std::ofstream& out, const std::string& str) const;
     std::string readString(std::ifstream& in) const;
 
@@ -37,6 +35,8 @@ public:
 
     void saveToFile(const std::string& filename) const;
     void loadFromFile(const std::string& filename);
+
+    void searchByMask(const std::string& maskStr) const;
 };
 
 #endif // ARCHIVEMANAGER_H

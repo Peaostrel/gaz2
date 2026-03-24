@@ -3,6 +3,7 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>
+#include <regex>
 
 ArchiveManager::ArchiveManager() : currentUserLevel(AccessLevel::ADMIN) {
     root = std::make_unique<Directory>("root", AccessLevel::GUEST);
@@ -67,6 +68,28 @@ void ArchiveManager::globalAudit() const {
     logOperation("AUDIT", true, "Запрошен глобальный аудит. Размер: " + std::to_string(totalSize));
 }
 
+void ArchiveManager::searchByMask(const std::string& maskStr) const {
+    std::cout << "\n=== Результаты поиска по маске: " << maskStr << " ===\n";
+    try {
+        std::regex mask(maskStr);
+        std::vector<const Resource*> allRes;
+        root->collectAll(allRes);
+        
+        bool found = false;
+        for (const auto& res : allRes) {
+            if (std::regex_search(res->getName(), mask)) {
+                std::cout << (res->isDirectory() ? "[Dir] " : "[File] ") 
+                          << res->getName() << " (" << res->calculateSize() << " bytes)\n";
+                found = true;
+            }
+        }
+        if (!found) std::cout << "Ничего не найдено.\n";
+        logOperation("SEARCH", true, "Поиск по маске: " + maskStr);
+    } catch (const std::regex_error&) {
+        throw FileSystemException("Некорректное регулярное выражение для поиска.");
+    }
+}
+
 void ArchiveManager::writeString(std::ofstream& out, const std::string& str) const {
     size_t len = str.length();
     out.write(reinterpret_cast<const char*>(&len), sizeof(len));
@@ -85,7 +108,6 @@ void ArchiveManager::serializeResource(const Resource* res, std::ofstream& out) 
     bool isDir = res->isDirectory();
     out.write(reinterpret_cast<const char*>(&isDir), sizeof(isDir));
     writeString(out, res->getName());
-    
     std::time_t cDate = res->getCreationDate();
     out.write(reinterpret_cast<const char*>(&cDate), sizeof(cDate));
 
@@ -93,11 +115,9 @@ void ArchiveManager::serializeResource(const Resource* res, std::ofstream& out) 
         const Directory* dir = dynamic_cast<const Directory*>(res);
         AccessLevel lvl = dir->getAccessLevel();
         out.write(reinterpret_cast<const char*>(&lvl), sizeof(lvl));
-        
         const auto& children = dir->getChildren();
         size_t childCount = children.size();
         out.write(reinterpret_cast<const char*>(&childCount), sizeof(childCount));
-        
         for (const auto& child : children) {
             serializeResource(child.get(), out);
         }
@@ -113,7 +133,6 @@ std::unique_ptr<Resource> ArchiveManager::deserializeResource(std::ifstream& in)
     bool isDir;
     in.read(reinterpret_cast<char*>(&isDir), sizeof(isDir));
     std::string name = readString(in);
-    
     std::time_t cDate;
     in.read(reinterpret_cast<char*>(&cDate), sizeof(cDate));
 
@@ -121,7 +140,6 @@ std::unique_ptr<Resource> ArchiveManager::deserializeResource(std::ifstream& in)
         AccessLevel lvl;
         in.read(reinterpret_cast<char*>(&lvl), sizeof(lvl));
         auto dir = std::make_unique<Directory>(name, lvl);
-        
         size_t childCount;
         in.read(reinterpret_cast<char*>(&childCount), sizeof(childCount));
         for (size_t i = 0; i < childCount; ++i) {
@@ -132,31 +150,26 @@ std::unique_ptr<Resource> ArchiveManager::deserializeResource(std::ifstream& in)
         std::string ext = readString(in);
         size_t size;
         in.read(reinterpret_cast<char*>(&size), sizeof(size));
-        auto file = std::make_unique<File>(name, ext, size);
-        return file;
+        return std::make_unique<File>(name, ext, size);
     }
 }
 
 void ArchiveManager::saveToFile(const std::string& filename) const {
     std::ofstream out(filename, std::ios::binary);
     if (!out) throw FileSystemException("Не удалось открыть файл для записи: " + filename);
-    
     out.write(reinterpret_cast<const char*>(&MAGIC_NUMBER), sizeof(MAGIC_NUMBER));
     serializeResource(root.get(), out);
-    
     logOperation("SAVE", true, "Архив сохранен в " + filename);
 }
 
 void ArchiveManager::loadFromFile(const std::string& filename) {
     std::ifstream in(filename, std::ios::binary);
     if (!in) throw FileSystemException("Не удалось открыть файл для чтения: " + filename);
-    
     uint32_t magic;
     in.read(reinterpret_cast<char*>(&magic), sizeof(magic));
     if (magic != MAGIC_NUMBER) {
         throw FileSystemException("Нарушена целостность данных! Неверное магическое число.");
     }
-    
     auto newRoot = deserializeResource(in);
     if (newRoot && newRoot->isDirectory()) {
         root = std::unique_ptr<Directory>(static_cast<Directory*>(newRoot.release()));
